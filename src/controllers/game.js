@@ -1,5 +1,5 @@
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
-import { CacheDictionaryFetch, CacheSortedSetGetScore } from '@gomomento/sdk';
+import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch } from '@gomomento/sdk';
 import { getCacheClient } from '../services/momento.js';
 import { UserSession } from './user.js';
 
@@ -86,7 +86,51 @@ const broadcastMessage = async (momento, gameId, connectionIdToIgnore, message) 
   }
 };
 
+const list = async () => {
+  const momento = await getCacheClient(['game']);
+
+  let gameList = [];
+  const games = await momento.setFetch('game', 'list');
+  if (games instanceof CacheSetFetch.Hit) {
+    gameList = games.valueArray().map(g => JSON.parse(g));
+  }
+
+  return gameList;
+};
+
+/**
+ * Creates a new game with the given criteria. Will fail if a game with the same name is provided
+ * 
+ * @param {*} name - Game name. This will be modified and used as the identifier
+ * @param {*} duration - Length of time the game will be valid for
+ * @param {*} mapId - Identifier of the map for the game
+ * @param {*} isRanked - Indicates if this is a ranked match
+ * @returns {{success: boolean, id: string, error: string}} - An object indicating if the operation was a success
+ */
+const create = async (name, duration, mapId, isRanked) => {
+  const nameKey = name.toLowerCase().replace(/[^\w\s]/gi, '').replace(/ /g, '-');
+  const gameList = await list();
+  if (gameList.includes(nameKey)) {
+    return { success: false, error: 'GameExists' };
+  }
+
+  const momento = await getCacheClient(['game']);
+  await Promise.all([
+    await momento.dictionarySetFields('game', nameKey, {
+      duration: `${duration}`,
+      name: name,
+      ...mapId && { mapId: mapId },
+      ...isRanked && { isRanked: `${isRanked}` }
+    }, { ttl: CollectionTtl.of(duration) }),
+    await momento.setAddElement('game', 'list', JSON.stringify({ id: nameKey, name: name }))
+  ]);
+
+  return { success: true, id: nameKey };
+};
+
 export const Game = {
   join,
-  leave
+  leave,
+  list,
+  create
 };

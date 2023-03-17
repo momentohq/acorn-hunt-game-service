@@ -5,11 +5,83 @@ info:
     API to perform in-game actions
   version: 1.0.0
 
+tags:
+  - name: in-game
+    description: Activities for active game usage
+  - name: navigation
+    description: Navigation operations for games
+
 paths:
+  /games:
+    post:
+      summary: Create a new game
+      operationId: createGame
+      tags:
+        - navigation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/newGame'
+      responses:
+        201:
+          description: The game was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/id'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/UnknownError'
+    get:
+      summary: Gets a list of all games
+      operationId: listGames
+      tags:
+        - navigation
+      responses:
+        200:
+          description: The game was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/gameList'
+        500:
+          $ref: '#/components/responses/UnknownError'
+
+  /games/{gameId}/players:
+    parameters:
+      - $ref: '#/components/parameters/gameId'
+    post:
+      summary: Join a game
+      operationId: joinGame      
+      tags:
+        - navigation
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/UnknownError'
+    delete:
+      summary: Leave a game
+      operationId: leaveGame
+      tags:
+        - navigation
+      responses:
+        204:
+          $ref: '#/components/responses/NoContent'
+        500:
+          $ref: '#/components/responses/UnknownError'
+
   /points:
     post:
       summary: Add or remove points from the caller in their active game
       operationId: updatePoints
+      tags:
+        - in-game
       requestBody:
         required: true
         content:
@@ -44,6 +116,8 @@ paths:
     post:
       summary: Add super-ability uses to the caller for their active game
       operationId: increaseSuperAbility
+      tags:
+        - in-game
       requestBody:
         required: true
         content:
@@ -76,6 +150,8 @@ paths:
     delete:
       summary: Remves a super-ability use for the caller in the active game
       operationId: decreaseSuperAbility
+      tags:
+        - in-game
       responses:
         200:
           description: The super-ability count decreased
@@ -94,6 +170,53 @@ paths:
           $ref: '#/components/responses/UnknownError'
 
 components:
+  parameters:
+    gameId:
+      name: gameId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    id:
+      description: Identifier of a newly created resource
+      type: object
+      properties:
+        id:
+          type: string
+
+    newGame:
+      description: Input for creating a new game
+      type: object
+      required:
+        - duration
+        - name
+      properties:
+        duration:
+          type: integer
+          minimum: 60
+          maximum: 7200
+        name:
+          type: string
+          minLength: 3
+          maxLength: 20
+        mapId:
+          type: string
+        isRanked:
+          type: boolean
+
+    gameList:
+      description: List of open games
+      type: array
+      items:
+        type: object
+        properties:
+          id: 
+            type: string
+          name:
+            type: string
+
   responses:
     BadRequest:
       description: Invalid input was provided
@@ -120,6 +243,22 @@ components:
               message:
                 type: string
                 example: You are not part of an active game
+
+    NoContent:
+      description: The request completed successfully and there is nothing to return
+
+    NotFound:
+      description: The requested resource was not found
+      content:
+        application/json:
+          schema: 
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+                example: Game not found
 
     UnknownError:
       description: An unexpected error occurred on the server.

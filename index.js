@@ -52,6 +52,35 @@ app.post('/movements', authenticate, validateHasActiveGame, async (req, res) => 
   }
 });
 
+app.post('/games', authenticate, async (req, res) => {
+  try {
+    const result = await Game.create(req.body.name, req.body.duration, req.body.mapId, req.body.isRanked);
+    if (result.success) {
+      return res.status(201).send({ id: result.id });
+    } else {
+      switch (result.error) {
+        case 'GameExists':
+          return res.status(409).send({ message: 'A game with the provided name already exists' });
+        default:
+          return res.status(500).send({ message: 'Something went wrong' });
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: 'Something went wrong' });
+  }
+});
+
+app.get('/games', authenticate, async (req, res) => {
+  try {
+    const gameList = await Game.list();
+    return res.status(200).send(gameList);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: 'Something went wrong' });
+  }
+});
+
 app.post('/games/:gameId/players', authenticate, async (req, res) => {
   try {
     const result = await Game.join(req.params.gameId, req.user.username);
