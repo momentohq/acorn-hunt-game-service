@@ -11,4 +11,4 @@ run:
     env: MY_APP_PORT
   env:
     - name: SECRET_ID
-      value: WebSocketSecret-4MV9n83IaSx7
+      value: AcornHuntSecret-0fwKJaqlLFaS
