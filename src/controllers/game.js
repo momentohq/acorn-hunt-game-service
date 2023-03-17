@@ -35,11 +35,18 @@ const join = async (gameId, username) => {
     await broadcastMessage(momento, gameId, userSession.connectionId, { type: 'player-change', message: `${username} joined the chat`, time: new Date().toISOString() })
   ]);
 
+  return { success: true };
 };
 
+/**
+ * Removes the caller from a specific game
+ * 
+ * @param { string } gameId - Unique identifier of the game
+ * @param { string } username - Username of the player to remove
+ */
 const leave = async (username, gameId, userSession) => {
   const momento = await getCacheClient(['player', 'connection', 'user']);
-  if(!userSession){
+  if (!userSession) {
     userSession = UserSession.load(username);
   }
 
@@ -49,7 +56,7 @@ const leave = async (username, gameId, userSession) => {
     await momento.dictionaryRemoveField('user', username, 'currentGameId', gameId),
     await broadcastMessage(momento, gameId, userSession.connectionId, { type: 'player-change', message: `${username.valueString()} left the chat`, time: new Date().toISOString() })
   ]);
-}
+};
 
 const initializeLeaderboardScore = async (momento, gameId, username) => {
   const existingScore = await momento.sortedSetGetScore('leaderboard', gameId, username);
@@ -71,7 +78,7 @@ const broadcastMessage = async (momento, gameId, connectionIdToIgnore, message) 
             connections,
             message,
             gameId,
-            saveToChatHistory: true,            
+            saveToChatHistory: true,
           })
         }
       ]
@@ -82,4 +89,4 @@ const broadcastMessage = async (momento, gameId, connectionIdToIgnore, message) 
 export const Game = {
   join,
   leave
-}
+};

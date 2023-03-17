@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticate, validateHasActiveGame } from './src/controllers/auth.js';
 import { Leaderboard } from './src/controllers/leaderboard.js';
 import { SuperAbility } from './src/controllers/superability.js';
+import { Game } from './src/controllers/game.js';
 
 const app = express();
 
@@ -51,6 +52,32 @@ app.post('/movements', authenticate, validateHasActiveGame, async (req, res) => 
   }
 });
 
-app.post('/games/{gameId}/players', authenticate, async (req, res) => {
-  
-})
+app.post('/games/:gameId/players', authenticate, async (req, res) => {
+  try {
+    const result = await Game.join(req.params.gameId, req.user.username);
+    if (result.success) {
+      return res.status(204).send();
+    } else {
+      switch (result.error) {
+        case 'GameNotFound':
+          return res.status(404).send({ message: 'Game not found' });
+        default:
+          return res.status(500).send({ message: 'Something went wrong' });
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: 'Something went wrong' });
+  }
+});
+
+app.delete('/games/:gameId/players', authenticate, async (req, res) => {
+  try {
+    await Game.leave(req.params.gameId, req.user.username);
+
+    return res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send({ message: 'Something went wrong' });
+  }
+});
