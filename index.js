@@ -50,3 +50,7 @@ app.post('/movements', authenticate, validateHasActiveGame, async (req, res) => 
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
+
+app.post('/games/{gameId}/players', authenticate, async (req, res) => {
+  
+})

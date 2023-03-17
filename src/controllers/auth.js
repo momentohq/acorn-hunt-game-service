@@ -24,7 +24,7 @@ export const authenticate = async (req, res, next) => {
 
 export const validateHasActiveGame = async (req, res, next) => {
   try {
-    const userSession = await UserSession.load(req.user);
+    const userSession = await UserSession.load(req.user.username);
     if (!userSession.gameId) {
       return res.status(409).send({ message: 'You are not part of an active game' });
     }

@@ -1,5 +1,5 @@
-import { Leaderboard } from "./leaderboard";
-import { getCacheClient } from "../services/momento";
+import { Leaderboard } from "./leaderboard.js";
+import { getCacheClient } from "../services/momento.js";
 
 const MAX_SUPER_ABILITIES = 5;
 
