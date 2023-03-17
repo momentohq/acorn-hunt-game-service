@@ -17,7 +17,11 @@ class UserSession {
       const signIn = new Date().toISOString();
       await momento.dictionarySetFields('user', username, { signInTime: signIn });
       signInTime = signInTime;
-    } else {
+    } 
+    else if ( sessionResponse instanceof CacheDictionaryGetFields.Error){
+      console.error(err);
+    }
+    else {
       const userSession = sessionResponse.valueRecord();
       gameId = userSession.gameId;
       signInTime = userSession.signInTime;
