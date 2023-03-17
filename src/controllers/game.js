@@ -1,7 +1,7 @@
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch } from '@gomomento/sdk';
 import { getCacheClient } from '../services/momento.js';
-import { UserSession } from './user.js';
+import UserSession from './user.js';
 
 const eventBridge = new EventBridgeClient();
 
@@ -127,6 +127,8 @@ const create = async (name, duration, mapId, isRanked) => {
 
   return { success: true, id: nameKey };
 };
+
+//const notifyPlayers = async( message )
 
 export const Game = {
   join,
