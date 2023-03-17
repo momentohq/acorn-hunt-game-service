@@ -12,3 +12,5 @@ run:
   env:
     - name: SECRET_ID
       value: AcornHuntSecret-0fwKJaqlLFaS
+    - name: CACHE_TTL
+      value: 3600

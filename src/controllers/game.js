@@ -128,6 +128,10 @@ const create = async (name, duration, mapId, isRanked) => {
   return { success: true, id: nameKey };
 };
 
+const configure = async () => {
+  
+}
+
 //const notifyPlayers = async( message )
 
 export const Game = {

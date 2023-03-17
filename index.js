@@ -5,6 +5,11 @@ import { SuperAbility } from './src/controllers/superability.js';
 import { Game } from './src/controllers/game.js';
 
 const app = express();
+app.use(express.json());
+
+const initialize = async (req, res, next) => {
+
+}
 
 app.listen(8000, () => { console.log('listening on port 8000') });
 

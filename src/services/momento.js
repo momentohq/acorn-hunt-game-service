@@ -1,19 +1,18 @@
 
-import { CacheClient, EnvMomentoTokenProvider, Configurations } from '@gomomento/sdk';
+import { CacheClient, Configurations, CredentialProvider } from '@gomomento/sdk';
 import getSecret from './secrets.js';
 
+let topicClient;
 let momento;
 const initializedCaches = [];
 
 export async function getCacheClient(caches) {
   if (!momento) {
     const authToken = await getSecret('momento');
-    process.env.AUTH_TOKEN = authToken;
-    const credentials = new EnvMomentoTokenProvider({ environmentVariableName: 'AUTH_TOKEN' });
 
     const cacheClient = new CacheClient({
       configuration: Configurations.Laptop.latest(),
-      credentialProvider: credentials,
+      credentialProvider: CredentialProvider.fromString(authToken),
       defaultTtlSeconds: Number(process.env.CACHE_TTL)
     });
     momento = cacheClient;
@@ -23,6 +22,18 @@ export async function getCacheClient(caches) {
 
   return momento;
 };
+
+// export async function getTopicClient() {
+//   if(topicClient)
+//     return topicClient;
+
+//   const authToken = await getSecret('momento');
+//   topicClient = new TopicClient({
+//     configuration: Configurations.Laptop.latest(),
+//     credentialProvider: CredentialProvider.fromString(authToken),
+//     defaultTtlSeconds: Number(process.env.CACHE_TTL)
+//   });  
+// };
 
 const initializeCaches = async (caches) => {
   const uninitializedCaches = caches.filter(c => !initializedCaches.some(ic => ic == c));
