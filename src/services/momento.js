@@ -33,8 +33,9 @@ export async function getCacheClient(caches) {
 //   topicClient = new TopicClient({
 //     configuration: Configurations.Laptop.v1(),
 //     credentialProvider: CredentialProvider.fromString()
-//   })
-  
+//   });
+//
+//   return topicClient;  
 // }
 
 const initializeCaches = async (caches) => {

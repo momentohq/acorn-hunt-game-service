@@ -14,9 +14,10 @@ const eventBridge = new EventBridgeClient();
  * @returns {{success: boolean, error: string}} - An object indicating if the operation was a success
  */
 const join = async (gameId, username) => {
-  const momento = await getCacheClient(['game', 'player', 'user', 'connection']);
+  const cacheClient = await getCacheClient(['game', 'player', 'user', 'connection']);
+  //const topicClient = await getTopicClient();
 
-  const gameResponse = await momento.dictionaryFetch('game', gameId);
+  const gameResponse = await cacheClient.dictionaryFetch('game', gameId);
   if (gameResponse instanceof CacheDictionaryFetch.Miss) {
     return { success: false, error: 'GameNotFound' };
   }
@@ -27,15 +28,22 @@ const join = async (gameId, username) => {
     await leave(username, userSession.gameId, userSession);
   }
 
+  const notification = {
+    gameId: gameId,
+    connectionId: userSession.connectionId,
+    message: `${username} joined the chat`
+  };
+
   await Promise.all([
-    await momento.setAddElement('player', gameId, username),
-    await initializeLeaderboardScore(momento, gameId, username),
-    await momento.setAddElement('connection', gameId, userSession.connectionId),
-    await momento.dictionarySetField('user', username, 'currentGameId', gameId),
-    await broadcastMessage(momento, gameId, userSession.connectionId, { type: 'player-change', message: `${username} joined the chat`, time: new Date().toISOString() })
+    await cacheClient.setAddElement('player', gameId, username),
+    await initializeLeaderboardScore(cacheClient, gameId, username),
+    await cacheClient.setAddElement('connection', gameId, userSession.connectionId),
+    await cacheClient.dictionarySetField('user', username, 'currentGameId', gameId),
+    await broadcastMessage(cacheClient, gameId, { type: 'player-change', message: `${username} joined the chat`, time: new Date().toISOString() }, userSession.connectionId),
+    //await topicClient.publish('game', 'player-change', JSON.stringify(notification))
   ]);
 
-  return { success: true };
+return { success: true };
 };
 
 /**
@@ -45,16 +53,25 @@ const join = async (gameId, username) => {
  * @param { string } username - Username of the player to remove
  */
 const leave = async (username, gameId, userSession) => {
-  const momento = await getCacheClient(['player', 'connection', 'user']);
+  const cacheClient = await getCacheClient(['player', 'connection', 'user']);
+  //const topicClient = await getTopicClient();
+
   if (!userSession) {
     userSession = await UserSession.load(username);
   }
 
+  const notification = {
+    gameId: gameId,
+    connectionId: userSession.connectionId,
+    message: `${username} left the chat`
+  };
+
   await Promise.all([
-    await momento.setRemoveElement('player', gameId, username),
-    await momento.setRemoveElement('connection', gameId, userSession.connectionId),
-    await momento.dictionaryRemoveField('user', username, 'currentGameId', gameId),
-    await broadcastMessage(momento, gameId, userSession.connectionId, { type: 'player-change', message: `${username.valueString()} left the chat`, time: new Date().toISOString() })
+    await cacheClient.setRemoveElement('player', gameId, username),
+    await cacheClient.setRemoveElement('connection', gameId, userSession.connectionId),
+    await cacheClient.dictionaryRemoveField('user', username, 'currentGameId', gameId),
+    await broadcastMessage(cacheClient, gameId, { type: 'player-change', message: `${username.valueString()} left the chat`, time: new Date().toISOString() }, userSession.connectionId),
+    //await topicClient.publish('game', 'player-change', JSON.stringify(notification))
   ]);
 };
 
@@ -65,32 +82,11 @@ const initializeLeaderboardScore = async (momento, gameId, username) => {
   }
 };
 
-const broadcastMessage = async (momento, gameId, connectionIdToIgnore, message) => {
-  const connectionResponse = await momento.setFetch('connection', gameId);
-  if (connectionResponse instanceof CacheSetFetch.Hit) {
-    const connections = connectionResponse.valueArray().filter(connection => connection != connectionIdToIgnore);
-    await eventBridge.send(new PutEventsCommand({
-      Entries: [
-        {
-          DetailType: 'Post to Connections',
-          Source: 'acorn-hunt',
-          Detail: JSON.stringify({
-            connections,
-            message,
-            gameId,
-            saveToChatHistory: true,
-          })
-        }
-      ]
-    }));
-  }
-};
-
 const list = async () => {
-  const momento = await getCacheClient(['game']);
+  const cacheClient = await getCacheClient(['game']);
 
   let gameList = [];
-  const games = await momento.setFetch('game', 'list');
+  const games = await cacheClient.setFetch('game', 'list');
   if (games instanceof CacheSetFetch.Hit) {
     gameList = games.valueArray().map(g => JSON.parse(g));
   }
@@ -114,25 +110,67 @@ const create = async (name, duration, mapId, isRanked) => {
     return { success: false, error: 'GameExists' };
   }
 
-  const momento = await getCacheClient(['game']);
+  const cacheClient = await getCacheClient(['game']);
   await Promise.all([
-    await momento.dictionarySetFields('game', nameKey, {
+    await cacheClient.dictionarySetFields('game', nameKey, {
       duration: `${duration}`,
       name: name,
       ...mapId && { mapId: mapId },
       ...isRanked && { isRanked: `${isRanked}` }
     }, { ttl: CollectionTtl.of(duration) }),
-    await momento.setAddElement('game', 'list', JSON.stringify({ id: nameKey, name: name }))
+    await cacheClient.setAddElement('game', 'list', JSON.stringify({ id: nameKey, name: name }))
   ]);
 
   return { success: true, id: nameKey };
 };
 
 const configure = async () => {
-  
-}
+  const topicClient = await getTopicClient();
+  topicClient.subscribe('game', 'player-change', {
+    onItem: notifyPlayers,
+    onError: logSubscriptionError
+  });
 
-//const notifyPlayers = async( message )
+  console.log('Topic client configured for player list updates');
+};
+
+const logSubscriptionError = (data, subscription) => {
+  console.error(`An error occurred with the play list subscription: ${data.toString()}`);
+};
+
+const notifyPlayers = async (data) => {
+  const cacheClient = await getCacheClient(['connection']);
+  const details = JSON.parse(data);
+
+  const message = {
+    type: 'player-change', 
+    message: details.message,
+    time: new Date().toISOString()
+  };
+
+  await broadcastMessage(cacheClient, details.gameId, message, details.connectionId);
+};
+
+const broadcastMessage = async (cacheClient, gameId, message, connectionIdToIgnore) => {
+  const connectionResponse = await cacheClient.setFetch('connection', gameId);
+  if (connectionResponse instanceof CacheSetFetch.Hit) {
+    const connections = connectionResponse.valueArray().filter(connection => connection != connectionIdToIgnore);
+    await eventBridge.send(new PutEventsCommand({
+      Entries: [
+        {
+          DetailType: 'Post to Connections',
+          Source: 'acorn-hunt',
+          Detail: JSON.stringify({
+            connections,
+            message,
+            gameId,
+            saveToChatHistory: true,
+          })
+        }
+      ]
+    }));
+  }
+};
 
 export const Game = {
   join,
