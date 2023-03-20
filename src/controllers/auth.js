@@ -14,7 +14,7 @@ export const authenticate = async (req, res, next) => {
     const secretKey = await getSecret('signature');
     const decoded = await jwt.verify(token, secretKey);
 
-    req.user = decoded;
+    req.user = decoded.data;
     next();
   } catch (err) {
     console.warn({ error: 'An invalid auth token was provided' });

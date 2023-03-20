@@ -19,7 +19,7 @@ class UserSession {
       signInTime = signInTime;
     } 
     else if ( sessionResponse instanceof CacheDictionaryGetFields.Error){
-      console.error(err);
+      console.error(sessionResponse.errorCode, sessionResponse.message);
     }
     else {
       const userSession = sessionResponse.valueRecord();

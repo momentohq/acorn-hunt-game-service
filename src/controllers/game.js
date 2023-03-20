@@ -21,7 +21,7 @@ const join = async (gameId, username) => {
     return { success: false, error: 'GameNotFound' };
   }
 
-  const userSession = UserSession.load(username);
+  const userSession = await UserSession.load(username);
 
   if (userSession.gameId) {
     await leave(username, userSession.gameId, userSession);
@@ -47,7 +47,7 @@ const join = async (gameId, username) => {
 const leave = async (username, gameId, userSession) => {
   const momento = await getCacheClient(['player', 'connection', 'user']);
   if (!userSession) {
-    userSession = UserSession.load(username);
+    userSession = await UserSession.load(username);
   }
 
   await Promise.all([
@@ -129,7 +129,7 @@ const create = async (name, duration, mapId, isRanked) => {
 };
 
 const configure = async () => {
-
+  
 }
 
 //const notifyPlayers = async( message )
