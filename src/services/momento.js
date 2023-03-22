@@ -41,9 +41,12 @@ export async function getTopicClient() {
     return topicClient;
 
   const authToken = await getSecret('momento');
+  process.env.AUTH_TOKEN = authToken;
+  const credentials = new EnvMomentoTokenProvider({ environmentVariableName: 'AUTH_TOKEN' });
+
   topicClient = new TopicClient({
     configuration: Configurations.Laptop.v1(),
-    credentialProvider: CredentialProvider.fromString()
+    credentialProvider: credentials
   });
 
   return topicClient;  
