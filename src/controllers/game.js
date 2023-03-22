@@ -40,8 +40,8 @@ const join = async (gameId, username) => {
     await topicClient.publish('game', 'player-joined', JSON.stringify(notification))
   ]);
 
-  const messages = await cacheClient.listFetch('chat', input.gameId);
-  const players = await cacheClient.setFetch('player', input.gameId);
+  const messages = await cacheClient.listFetch('chat', gameId);
+  const players = await cacheClient.setFetch('player', gameId);
 
   const response = {
     name: gameResponse.valueRecord().name,
