@@ -29,7 +29,7 @@ const logSubscriptionError = (data, subscription) => {
 };
 
 const onPlayerJoined = async (data) => {
-  const details = JSON.parse(data);
+  const details = JSON.parse(data.value());
 
   const message = {
     type: 'player-joined', 
@@ -42,7 +42,7 @@ const onPlayerJoined = async (data) => {
 };
 
 const onPlayerLeft = async (data) => {
-  const details = JSON.parse(data);
+  const details = JSON.parse(data.value());
 
   const message = {
     type: 'player-left', 
@@ -55,7 +55,7 @@ const onPlayerLeft = async (data) => {
 };
 
 const onPointsChanged = async (data) => {
-  const details = JSON.parse(data);
+  const details = JSON.parse(data.value());
 
   const message = {
     type: 'points-updated',
@@ -75,7 +75,7 @@ const broadcastMessage = async (gameId, message, connectionIdToIgnore) => {
     if(connectionIdToIgnore){
       connections = connections.filter(connection => connection != connectionIdToIgnore);
     }
-    
+
     await eventBridge.send(new PutEventsCommand({
       Entries: [
         {
