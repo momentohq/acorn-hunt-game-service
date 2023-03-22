@@ -4,11 +4,13 @@ import { authenticate, validateHasActiveGame } from './src/controllers/auth.js';
 import { Leaderboard } from './src/controllers/leaderboard.js';
 import { SuperAbility } from './src/controllers/superability.js';
 import { Game } from './src/controllers/game.js';
-//import { Messenger } from './src/services/messenger.js';
+import { Messenger } from './src/services/messenger.js';
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+await Messenger.configure();
 
 app.listen(8000, () => { console.log('listening on port 8000') });
 

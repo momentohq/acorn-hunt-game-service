@@ -1,10 +1,12 @@
 import { CacheSortedSetPutElement } from "@gomomento/sdk";
-import { getCacheClient } from "../services/momento.js";
+import { getCacheClient, getTopicClient } from "../services/momento.js";
 
 const updateScore = async (gameId, username, points) => {
-  const momento = await getCacheClient(['leaderboard']);
-  const newScore = await momento.sortedSetIncrementScore('leaderboard', gameId, username, points);
+  const cacheClient = await getCacheClient(['leaderboard']);
+  const topicClient = await getTopicClient();
 
+  const newScore = await cacheClient.sortedSetIncrementScore('leaderboard', gameId, username, points);
+  await topicClient.publish('leaderboard', 'points-updated', JSON.stringify({ gameId, username, score: newScore.score() }));
   return newScore.score();
 };
 
@@ -25,4 +27,4 @@ const setScore = async (gameId, username, score) => {
 export const Leaderboard = {
   updateScore,
   setScore
-}
+};

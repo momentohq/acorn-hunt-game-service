@@ -1,9 +1,7 @@
-import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch, CollectionTtl } from '@gomomento/sdk';
-import { getCacheClient } from '../services/momento.js';
+import { getCacheClient, getTopicClient } from '../services/momento.js';
 import UserSession from './user.js';
-
-const eventBridge = new EventBridgeClient();
+import { Maps } from '../services/maps.js';
 
 /**
  * Makes the caller a player in the provided game. If the caller is actively part of another game, 
@@ -15,7 +13,7 @@ const eventBridge = new EventBridgeClient();
  */
 const join = async (gameId, username) => {
   const cacheClient = await getCacheClient(['game', 'player', 'user', 'connection']);
-  //const topicClient = await getTopicClient();
+  const topicClient = await getTopicClient();
 
   const gameResponse = await cacheClient.dictionaryFetch('game', gameId);
   if (gameResponse instanceof CacheDictionaryFetch.Miss) {
@@ -23,7 +21,6 @@ const join = async (gameId, username) => {
   }
 
   const userSession = await UserSession.load(username);
-
   if (userSession.gameId) {
     await leave(username, userSession.gameId, userSession);
   }
@@ -31,7 +28,8 @@ const join = async (gameId, username) => {
   const notification = {
     gameId: gameId,
     connectionId: userSession.connectionId,
-    message: `${username} joined the chat`
+    message: `${username} joined the chat`,
+    username: username
   };
 
   await Promise.all([
@@ -39,11 +37,10 @@ const join = async (gameId, username) => {
     await initializeLeaderboardScore(cacheClient, gameId, username),
     await cacheClient.setAddElement('connection', gameId, userSession.connectionId),
     await cacheClient.dictionarySetField('user', username, 'currentGameId', gameId),
-    await broadcastMessage(cacheClient, gameId, { type: 'player-change', message: `${username} joined the chat`, time: new Date().toISOString() }, userSession.connectionId),
-    //await topicClient.publish('game', 'player-change', JSON.stringify(notification))
+    await topicClient.publish('game', 'player-joined', JSON.stringify(notification))
   ]);
 
-return { success: true };
+  return { success: true };
 };
 
 /**
@@ -54,7 +51,7 @@ return { success: true };
  */
 const leave = async (username, gameId, userSession) => {
   const cacheClient = await getCacheClient(['player', 'connection', 'user']);
-  //const topicClient = await getTopicClient();
+  const topicClient = await getTopicClient();
 
   if (!userSession) {
     userSession = await UserSession.load(username);
@@ -63,15 +60,15 @@ const leave = async (username, gameId, userSession) => {
   const notification = {
     gameId: gameId,
     connectionId: userSession.connectionId,
-    message: `${username} left the chat`
+    message: `${username} left the chat`,
+    username: username
   };
 
   await Promise.all([
     await cacheClient.setRemoveElement('player', gameId, username),
     await cacheClient.setRemoveElement('connection', gameId, userSession.connectionId),
     await cacheClient.dictionaryRemoveField('user', username, 'currentGameId', gameId),
-    await broadcastMessage(cacheClient, gameId, { type: 'player-change', message: `${username.valueString()} left the chat`, time: new Date().toISOString() }, userSession.connectionId),
-    //await topicClient.publish('game', 'player-change', JSON.stringify(notification))
+    await topicClient.publish('game', 'player-left', JSON.stringify(notification))
   ]);
 };
 
@@ -82,6 +79,11 @@ const initializeLeaderboardScore = async (momento, gameId, username) => {
   }
 };
 
+/**
+ * Get a list of all active games
+ * 
+ * @returns array of game objects containing the name and identifier
+ */
 const list = async () => {
   const cacheClient = await getCacheClient(['game']);
 
@@ -115,7 +117,7 @@ const create = async (name, duration, mapId, isRanked) => {
     await cacheClient.dictionarySetFields('game', nameKey, {
       duration: `${duration}`,
       name: name,
-      ...mapId && { mapId: mapId },
+      map: 'oakCity',
       ...isRanked && { isRanked: `${isRanked}` }
     }, { ttl: CollectionTtl.of(duration) }),
     await cacheClient.setAddElement('game', 'list', JSON.stringify({ id: nameKey, name: name }))
@@ -124,51 +126,43 @@ const create = async (name, duration, mapId, isRanked) => {
   return { success: true, id: nameKey };
 };
 
-const configure = async () => {
-  const topicClient = await getTopicClient();
-  topicClient.subscribe('game', 'player-change', {
-    onItem: notifyPlayers,
-    onError: logSubscriptionError
-  });
+const move = async (gameId, username, direction) => {
+  const cacheClient = await getCacheClient(['user', 'game']);
 
-  console.log('Topic client configured for player list updates');
-};
+  const game = await cacheClient.dictionaryGetField('game', gameId, 'map');
+  const mapName = game.valueString();
+  const map = Maps[mapName];
+  const userLocationResponse = await cacheClient.dictionaryGetFields('user', username, ['x', 'y']);
+  const location = userLocationResponse.valueRecord();
+  let x = Number(location.x);
+  let y = Number(location.y);
 
-const logSubscriptionError = (data, subscription) => {
-  console.error(`An error occurred with the play list subscription: ${data.toString()}`);
-};
+  switch (direction.toLowerCase()) {
+    case 'up':
+      if (y > 0) {
+        y -= 1;
+      }
+      break;
+    case 'down':
+      if (y < (map.height - 1)) {
+        y += 1
+      }
+      break;
+    case 'left':
+      if (x > 0) {
+        x -= 1;
+      }
+      break;
+    case 'right':
+      if (x < (map.width - 1)) {
+        x += 1;
+      }
+      break;
+  }
 
-const notifyPlayers = async (data) => {
-  const cacheClient = await getCacheClient(['connection']);
-  const details = JSON.parse(data);
-
-  const message = {
-    type: 'player-change', 
-    message: details.message,
-    time: new Date().toISOString()
-  };
-
-  await broadcastMessage(cacheClient, details.gameId, message, details.connectionId);
-};
-
-const broadcastMessage = async (cacheClient, gameId, message, connectionIdToIgnore) => {
-  const connectionResponse = await cacheClient.setFetch('connection', gameId);
-  if (connectionResponse instanceof CacheSetFetch.Hit) {
-    const connections = connectionResponse.valueArray().filter(connection => connection != connectionIdToIgnore);
-    await eventBridge.send(new PutEventsCommand({
-      Entries: [
-        {
-          DetailType: 'Post to Connections',
-          Source: 'acorn-hunt',
-          Detail: JSON.stringify({
-            connections,
-            message,
-            gameId,
-            saveToChatHistory: true,
-          })
-        }
-      ]
-    }));
+  const newSpace = await cacheClient.dictionaryGetField('game', `${gameId}-tiles`, `${x},${y}`);
+  if(newSpace instanceof CacheDictionaryGetField.Miss){
+    
   }
 };
 
