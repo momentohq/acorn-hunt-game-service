@@ -40,8 +40,8 @@ const join = async (gameId, username) => {
     await topicClient.publish('game', 'player-joined', JSON.stringify(notification))
   ]);
 
-  const messages = await momento.listFetch('chat', input.gameId);
-  const players = await momento.setFetch('player', input.gameId);
+  const messages = await cacheClient.listFetch('chat', input.gameId);
+  const players = await cacheClient.setFetch('player', input.gameId);
 
   const response = {
     name: gameResponse.valueRecord().name,
@@ -82,10 +82,10 @@ const leave = async (username, gameId, userSession) => {
   ]);
 };
 
-const initializeLeaderboardScore = async (momento, gameId, username) => {
-  const existingScore = await momento.sortedSetGetScore('leaderboard', gameId, username);
+const initializeLeaderboardScore = async (cacheClient, gameId, username) => {
+  const existingScore = await cacheClient.sortedSetGetScore('leaderboard', gameId, username);
   if (existingScore instanceof CacheSortedSetGetScore.Miss) {
-    await momento.sortedSetPutElement('leaderboard', gameId, username, 0.3);
+    await cacheClient.sortedSetPutElement('leaderboard', gameId, username, 0.3);
   }
 };
 

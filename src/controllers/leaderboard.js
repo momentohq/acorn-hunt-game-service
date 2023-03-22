@@ -11,8 +11,8 @@ const updateScore = async (gameId, username, points) => {
 };
 
 const setScore = async (gameId, username, score) => {
-  const momento = await getCacheClient(['leaderboard']);
-  const setScoreResponse = await momento.sortedSetPutElement('leaderboard', gameId, username, score);
+  const cacheClient = await getCacheClient(['leaderboard']);
+  const setScoreResponse = await cacheClient.sortedSetPutElement('leaderboard', gameId, username, score);
   if (setScoreResponse instanceof CacheSortedSetPutElement.Error) {
     console.error({
       error: 'SortedSetPutElement',

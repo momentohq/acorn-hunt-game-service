@@ -11,11 +11,11 @@ class UserSession {
 
   static async load(username) {
     let signInTime, gameId, connectionId;
-    const momento = await getCacheClient(['user']);
-    const sessionResponse = await momento.dictionaryGetFields('user', username, ['gameId', 'signInTime', 'wsConnectionId']);
+    const cacheClient = await getCacheClient(['user']);
+    const sessionResponse = await cacheClient.dictionaryGetFields('user', username, ['gameId', 'signInTime', 'wsConnectionId']);
     if (sessionResponse instanceof CacheDictionaryGetFields.Miss) {
       const signIn = new Date().toISOString();
-      await momento.dictionarySetFields('user', username, { signInTime: signIn });
+      await cacheClient.dictionarySetFields('user', username, { signInTime: signIn });
       signInTime = signInTime;
     } 
     else if ( sessionResponse instanceof CacheDictionaryGetFields.Error){
