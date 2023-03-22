@@ -40,7 +40,17 @@ const join = async (gameId, username) => {
     await topicClient.publish('game', 'player-joined', JSON.stringify(notification))
   ]);
 
-  return { success: true };
+  const messages = await momento.listFetch('chat', input.gameId);
+  const players = await momento.setFetch('player', input.gameId);
+
+  const response = {
+    name: gameResponse.valueRecord().name,
+    username: username,
+    players: Array.from(players.valueSet()),
+    messages: messages.valueListString().map(m => JSON.parse(m))
+  }
+
+  return { success: true, response };
 };
 
 /**
@@ -161,8 +171,8 @@ const move = async (gameId, username, direction) => {
   }
 
   const newSpace = await cacheClient.dictionaryGetField('game', `${gameId}-tiles`, `${x},${y}`);
-  if(newSpace instanceof CacheDictionaryGetField.Miss){
-    
+  if (newSpace instanceof CacheDictionaryGetField.Miss) {
+
   }
 };
 

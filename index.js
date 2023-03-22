@@ -91,7 +91,7 @@ app.post('/games/:gameId/players', authenticate, async (req, res) => {
   try {
     const result = await Game.join(req.params.gameId, req.user.username);
     if (result.success) {
-      return res.status(204).send();
+      return res.status(200).send(result.response);
     } else {
       switch (result.error) {
         case 'GameNotFound':
