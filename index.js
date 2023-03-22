@@ -60,6 +60,8 @@ app.post('/movements', authenticate, validateHasActiveGame, async (req, res) => 
 
 app.post('/games', authenticate, async (req, res) => {
   try {
+    console.log(req.body);
+    console.log(req);
     const result = await Game.create(req.body.name, req.body.duration, req.body.mapId, req.body.isRanked);
     if (result.success) {
       return res.status(201).send({ id: result.id });
