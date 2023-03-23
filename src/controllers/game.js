@@ -27,7 +27,6 @@ const join = async (gameId, username) => {
 
   const notification = {
     gameId: gameId,
-    connectionId: userSession.connectionId,
     message: `${username} joined the chat`,
     username: username
   };
