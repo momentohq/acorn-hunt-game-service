@@ -55,7 +55,7 @@ const join = async (gameId, username) => {
   }
 
   if (messages instanceof CacheListFetch.Hit) {
-    response.messages = messages.valueListString();
+    response.messages = messages.valueListString().map(m => JSON.parse(m));
   }
 
   return { success: true, response };
