@@ -1,4 +1,4 @@
-import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch, CollectionTtl } from '@gomomento/sdk';
+import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch, CacheListFetch, CollectionTtl } from '@gomomento/sdk';
 import { getCacheClient, getTopicClient } from '../services/momento.js';
 import UserSession from './user.js';
 import { Maps } from '../services/maps.js';
@@ -51,7 +51,11 @@ const join = async (gameId, username) => {
     name: gameResponse.valueRecord().name,
     username: username,
     players: Array.from(players.valueSet()),
-    messages: messages?.valueListString().map(m => JSON.parse(m)) ?? []
+    messages: []
+  }
+
+  if (messages instanceof CacheListFetch.Hit) {
+    response.messages = messages.valueListString();
   }
 
   return { success: true, response };
