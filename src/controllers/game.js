@@ -32,7 +32,7 @@ const join = async (gameId, username) => {
     username: username
   };
 
-  await Promise.all([
+  await Promise.allSettled([
     await cacheClient.setAddElement('player', gameId, username),
     await initializeLeaderboardScore(cacheClient, gameId, username),
     await cacheClient.setAddElement('connection', gameId, userSession.connectionId),

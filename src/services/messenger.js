@@ -6,17 +6,17 @@ const eventBridge = new EventBridgeClient();
 
 const configure = async () => {
   const topicClient = await getTopicClient();
-  topicClient.subscribe('game', 'player-joined', {
+  await topicClient.subscribe('game', 'player-joined', {
     onItem: onPlayerJoined,
     onError: logSubscriptionError
   });
 
-  topicClient.subscribe('game', 'player-left', {
+  await topicClient.subscribe('game', 'player-left', {
     onItem: onPlayerLeft,
     onError: logSubscriptionError
   });
 
-  topicClient.subscribe('leaderboard', 'points-updated', {
+  await topicClient.subscribe('leaderboard', 'points-updated', {
     onItem: onPointsChanged,
     onError: logSubscriptionError
   });
