@@ -51,7 +51,7 @@ const onPlayerLeft = async (data) => {
     time: new Date().toISOString()
   };
 
-  await broadcastMessage(details.gameId, message, details.connectionId);
+  await broadcastMessage(details.gameId, message);
 };
 
 const onPointsChanged = async (data) => {

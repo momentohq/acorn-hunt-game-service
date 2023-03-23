@@ -40,9 +40,9 @@ const join = async (gameId, username) => {
     await topicClient.publish('game', 'player-joined', JSON.stringify(notification))
   ]);
 
-  const failedPosts = results.filter(result => result.status == 'rejected');
-  for (const failedPost of failedPosts) {
-    console.error({ error: 'JoinGameFailed', message: `${failedPost.reason} - ${failedPost.value}` });
+  const failedCalls = results.filter(result => result.status == 'rejected');
+  for (const failedCall of failedCalls) {
+    console.error({ error: 'JoinGameFailed', message: `${failedCall.reason} - ${failedCall.value}` });
   }
 
   const messages = await cacheClient.listFetch('chat', gameId);
@@ -74,17 +74,23 @@ const leave = async (username, gameId, userSession) => {
 
   const notification = {
     gameId: gameId,
-    connectionId: userSession.connectionId,
     message: `${username} left the chat`,
     username: username
   };
 
-  await Promise.all([
+  console.log('Leave:\n', JSON.stringify(notification));
+
+  const results = await Promise.allSettled([
     await cacheClient.setRemoveElement('player', gameId, username),
     await cacheClient.setRemoveElement('connection', gameId, userSession.connectionId),
     await cacheClient.dictionaryRemoveField('user', username, 'currentGameId', gameId),
     await topicClient.publish('game', 'player-left', JSON.stringify(notification))
   ]);
+
+  const failedCalls = results.filter(result => result.status == 'rejected');
+  for (const failedCall of failedCalls) {
+    console.error({ error: 'LeaveGameFailed', message: `${failedCall.reason} - ${failedCall.value}` });
+  }
 };
 
 const initializeLeaderboardScore = async (cacheClient, gameId, username) => {
