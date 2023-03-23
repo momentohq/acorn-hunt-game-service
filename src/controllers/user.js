@@ -25,7 +25,7 @@ class UserSession {
       const userSession = sessionResponse.valueRecord();
       gameId = userSession.gameId;
       signInTime = userSession.signInTime;
-      connectionId = userSession.connectionId;
+      connectionId = userSession.wsConnectionId;
     }
 
     return new UserSession(username, signInTime, gameId);
