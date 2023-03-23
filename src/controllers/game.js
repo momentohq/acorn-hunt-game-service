@@ -32,13 +32,18 @@ const join = async (gameId, username) => {
     username: username
   };
 
-  await Promise.allSettled([
+  const results = await Promise.allSettled([
     await cacheClient.setAddElement('player', gameId, username),
     await initializeLeaderboardScore(cacheClient, gameId, username),
     await cacheClient.setAddElement('connection', gameId, userSession.connectionId),
     await cacheClient.dictionarySetField('user', username, 'currentGameId', gameId),
     await topicClient.publish('game', 'player-joined', JSON.stringify(notification))
   ]);
+
+  const failedPosts = results.filter(result => result.status == 'rejected');
+  for (const failedPost of failedPosts) {
+    console.error({ error: 'JoinGameFailed', message: `${failedPost.reason} - ${failedPost.value}` });
+  }
 
   const messages = await cacheClient.listFetch('chat', gameId);
   const players = await cacheClient.setFetch('player', gameId);
