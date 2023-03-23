@@ -52,7 +52,7 @@ const join = async (gameId, username) => {
     name: gameResponse.valueRecord().name,
     username: username,
     players: Array.from(players.valueSet()),
-    messages: messages.valueListString().map(m => JSON.parse(m))
+    messages: messages?.valueListString().map(m => JSON.parse(m)) ?? []
   }
 
   return { success: true, response };

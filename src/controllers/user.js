@@ -28,7 +28,7 @@ class UserSession {
       connectionId = userSession.wsConnectionId;
     }
 
-    return new UserSession(username, signInTime, gameId);
+    return new UserSession(username, signInTime, gameId, connectionId);
   };
 }
 
