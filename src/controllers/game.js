@@ -64,7 +64,7 @@ const join = async (gameId, username) => {
  * @param { string } gameId - Unique identifier of the game
  * @param { string } username - Username of the player to remove
  */
-const leave = async (username, gameId, userSession) => {
+const leave = async (gameId, username, userSession) => {
   const cacheClient = await getCacheClient(['player', 'connection', 'user']);
   const topicClient = await getTopicClient();
 
