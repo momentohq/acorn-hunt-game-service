@@ -5,6 +5,10 @@ info:
     API to perform in-game actions
   version: 1.0.0
 
+servers:
+  - description: Development
+    url: https://pmizqmbanw.us-east-1.awsapprunner.com
+
 tags:
   - name: in-game
     description: Activities for active game usage
