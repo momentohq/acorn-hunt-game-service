@@ -173,6 +173,56 @@ paths:
         500:
           $ref: '#/components/responses/UnknownError'
 
+  /leaderboards:
+    get:
+      parameters:
+        - name: order
+          in: query
+          description: Determines if leaderboard is returned in ascending or descending point order
+          schema:
+            type: string
+            enum: [asc, desc]
+        - name: top
+          in: query
+          description: Limits the number of results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+      summary: Gets the leaderboard for the caller's current game
+      operationId: getLeaderboard
+      tags:
+        - in-game
+      responses:
+        200:
+          description: The leaderboard is returned
+          content:
+            application/json:
+              schema:
+                tye: object
+                required:
+                  - leaderboard
+                properties:
+                  leaderboard:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - rank
+                        - username
+                        - score
+                      properties:
+                        rank:
+                          type: integer
+                        username:
+                          type: string
+                        score:
+                          type: integer
+        404:
+          $ref: '#/components/responses/NotFound'
+        500:
+          $ref: '#/components/responses/UnknownError'
+
 components:
   parameters:
     gameId:

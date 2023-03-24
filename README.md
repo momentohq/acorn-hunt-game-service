@@ -24,6 +24,7 @@ This microservice contains the following endpoints:
 * `POST /super-abilities`
 * `DELETE /super-abilities`
 * `POST /movements`
+* `GET /leaderboards`
 
 For full API details, please [refer to the specification](./openapi.yaml).
 

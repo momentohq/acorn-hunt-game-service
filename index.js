@@ -20,7 +20,7 @@ app.post('/points', authenticate, validateHasActiveGame, async (req, res) => {
 
     return res.status(200).send({ score });
   } catch (err) {
-    console.error(err);
+    console.error('POST /points\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
@@ -30,7 +30,7 @@ app.post('/super-abilities', authenticate, validateHasActiveGame, async (req, re
     const newCount = await SuperAbility.increase(req.user.gameId, req.user.username, req.body.count);
     return res.status(200).send({ remaining: newCount });
   } catch (err) {
-    console.error(err);
+    console.error('POST /super-abilities\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
@@ -44,7 +44,7 @@ app.delete('/super-abilities', authenticate, validateHasActiveGame, async (req, 
       res.status(409).send({ message: 'Out of super-ability uses' });
     }
   } catch (err) {
-    console.error(err);
+    console.error('DELETE /super-abilities\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
@@ -53,7 +53,7 @@ app.post('/movements', authenticate, validateHasActiveGame, async (req, res) => 
   try {
 
   } catch (err) {
-    console.error(err);
+    console.error('POST /movements\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
@@ -72,7 +72,7 @@ app.post('/games', authenticate, async (req, res) => {
       }
     }
   } catch (err) {
-    console.error(err);
+    console.error('POST /games\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
@@ -82,7 +82,7 @@ app.get('/games', authenticate, async (req, res) => {
     const gameList = await Game.list();
     return res.status(200).send(gameList);
   } catch (err) {
-    console.error(err);
+    console.error('GET /games\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
@@ -101,7 +101,7 @@ app.post('/games/:gameId/players', authenticate, async (req, res) => {
       }
     }
   } catch (err) {
-    console.error(err);
+    console.error('POST /games/:gameId/players\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
@@ -112,7 +112,26 @@ app.delete('/games/:gameId/players', authenticate, async (req, res) => {
 
     return res.status(204).send();
   } catch (err) {
-    console.error(err);
+    console.error('DELETE /games/:gameId/players\n', err);
+    return res.status(500).send({ message: 'Something went wrong' });
+  }
+});
+
+app.get('/leaderboard', authenticate, validateHasActiveGame, async (req, res) => {
+  try {
+    const response = await Leaderboard.fetch(req.user.gameId, req.query.order, req.query.top);
+    if (response.success) {
+      res.status(200).send({ leaderboard: response.leaderboard });
+    } else {
+      switch (result.error) {
+        case 'GameNotFound':
+          return res.status(404).send({ message: 'Game not found' });
+        default:
+          return res.status(500).send({ message: 'Something went wrong' });
+      }
+    }
+  } catch (err) {
+    console.error('GET /leaderboard\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
