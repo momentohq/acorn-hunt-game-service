@@ -31,12 +31,37 @@ const join = async (gameId, username) => {
     username: username
   };
 
+  const game = gameResponse.valueRecord();
+  const tileResponse = await cacheClient.dictionaryFetch('game', `${gameId}-tiles`);
+  const tiles = Object.keys(tileResponse.valueRecord());
+  const map = Maps[game.map];
+  let coords, x, y;
+  while (!coords) {
+    x = Math.floor(Math.random() * map.width);
+    y = Math.floor(Math.random() * map.height);
+    coords = `${x},${y}`;
+    if (tiles.includes(coords)) {
+      coords = '';
+    }
+  }
+
+  const avatar = 'blue-squirrel';
+
+  const userTile = {
+    type: 'player',
+    avatar,
+    username,
+    direction: x < (map.width / 2) ? 'right' : 'left'
+  };
+
   const results = await Promise.allSettled([
     await cacheClient.setAddElement('player', gameId, username),
     await initializeLeaderboardScore(cacheClient, gameId, username),
     await cacheClient.setAddElement('connection', gameId, userSession.connectionId),
-    await cacheClient.dictionarySetField('user', username, 'currentGameId', gameId),
-    await topicClient.publish('game', 'player-joined', JSON.stringify(notification))
+    await cacheClient.dictionarySetFields('user', username, { x, y, avatar, currentGameId: gameId }),
+    await cacheClient.dictionarySetField('game', `${gameId}-tiles`, coords, JSON.stringify(userTile)),
+    await topicClient.publish('game', 'player-joined', JSON.stringify(notification)),
+    await topicClient.publish('game', 'player-moved', JSON.stringify({ ...userTile, x, y, gameId }))
   ]);
 
   const failedCalls = results.filter(result => result.status == 'rejected');
@@ -48,7 +73,7 @@ const join = async (gameId, username) => {
   const players = await cacheClient.setFetch('player', gameId);
 
   const response = {
-    name: gameResponse.valueRecord().name,
+    name: game.name,
     username: username,
     players: Array.from(players.valueSet()),
     messages: []
@@ -81,12 +106,14 @@ const leave = async (gameId, username, userSession) => {
     username: username
   };
 
-  console.log('Leave:\n', JSON.stringify(notification));
+  const userLocationResponse = await cacheClient.dictionaryGetFields('user', username, ['x', 'y']);
+  const location = userLocationResponse.valueRecord();
 
   const results = await Promise.allSettled([
     await cacheClient.setRemoveElement('player', gameId, username),
     await cacheClient.setRemoveElement('connection', gameId, userSession.connectionId),
-    await cacheClient.dictionaryRemoveField('user', username, 'currentGameId', gameId),
+    await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
+    await cacheClient.dictionaryRemoveField('game', `${gameId}-tiles`, `${location.x},${location.y}`),
     await topicClient.publish('game', 'player-left', JSON.stringify(notification))
   ]);
 
@@ -137,26 +164,44 @@ const create = async (name, duration, mapId, isRanked) => {
   }
 
   const cacheClient = await getCacheClient(['game']);
+  mapId = 'oakCity';
+  const map = Maps[mapId];
+
+  const blocks = {}
+  map.blocks.map(block => {
+    blocks[`${block.x},${block.y}`] = JSON.stringify({ type: block.type });
+  });
+
   await Promise.all([
     await cacheClient.dictionarySetFields('game', nameKey, {
       duration: `${duration}`,
       name: name,
-      map: 'oakCity',
+      map: mapId,
       ...isRanked && { isRanked: `${isRanked}` }
     }, { ttl: CollectionTtl.of(duration) }),
-    await cacheClient.setAddElement('game', 'list', JSON.stringify({ id: nameKey, name: name }))
+    await cacheClient.setAddElement('game', 'list', JSON.stringify({ id: nameKey, name: name })),
+    await cacheClient.dictionarySetFields('game', `${gameId}-tiles`, blocks)
   ]);
 
   return { success: true, id: nameKey };
 };
 
+/**
+ * Moves a character in the provided game if allowed
+ * 
+ * @param {string} gameId - Identifier of the game
+ * @param {string} username - Username of the player to move
+ * @param {string} direction - Direction to move the player. Valid values "up", "down", "left", "right"
+ * @returns {object} New user coordinates and facing direction
+ */
 const move = async (gameId, username, direction) => {
   const cacheClient = await getCacheClient(['user', 'game']);
+  const topicClient = await getTopicClient();
 
   const game = await cacheClient.dictionaryGetField('game', gameId, 'map');
   const mapName = game.valueString();
   const map = Maps[mapName];
-  const userLocationResponse = await cacheClient.dictionaryGetFields('user', username, ['x', 'y']);
+  const userLocationResponse = await cacheClient.dictionaryGetFields('user', username, ['x', 'y', 'avatar']);
   const location = userLocationResponse.valueRecord();
   let x = Number(location.x);
   let y = Number(location.y);
@@ -184,15 +229,30 @@ const move = async (gameId, username, direction) => {
       break;
   }
 
+  const playerSpace = {
+    type: 'player',
+    avatar: location.avatar,
+    username,
+    direction
+  };
+
   const newSpace = await cacheClient.dictionaryGetField('game', `${gameId}-tiles`, `${x},${y}`);
   if (newSpace instanceof CacheDictionaryGetField.Miss) {
-
+    await Promise.allSettled([
+      await cacheClient.dictionaryRemoveField('game', `${gameId}-tiles`, `${location.x},${location.y}`),
+      await cacheClient.dictionarySetField('game', `${gameId}-tiles`, `${x},${y}`, JSON.stringify(playerSpace))
+    ]);
   }
+
+  await topicClient.publish('game', 'player-moved', JSON.stringify({ ...playerSpace, x, y, gameId }));
+
+  return { x, y, direction};
 };
 
 export const Game = {
   join,
   leave,
   list,
-  create
+  create,
+  move
 };

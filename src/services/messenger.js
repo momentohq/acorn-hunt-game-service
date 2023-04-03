@@ -21,6 +21,11 @@ const configure = async () => {
     onError: logSubscriptionError
   });
 
+  await topicClient.subscribe('game', 'player-moved', {
+    onItem: onPlayerMoved,
+    onError: logSubscriptionError
+  });
+
   console.log('Topic client configured');
 };
 
@@ -62,6 +67,21 @@ const onPointsChanged = async (data) => {
     username: details.username,
     score: details.score,
     time: new Date().toISOString()
+  };
+
+  await broadcastMessage(details.gameId, message);
+};
+
+const onPlayerMoved = async (data) => {
+  const details = JSON.parse(data.value());
+
+  const message = {
+    type: 'player-moved',
+    username: details.username,
+    avatar: details.avatar,
+    direction: details.direction,
+    x: details.x,
+    y: details.y
   };
 
   await broadcastMessage(details.gameId, message);

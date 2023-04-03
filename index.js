@@ -51,7 +51,12 @@ app.delete('/super-abilities', authenticate, validateHasActiveGame, async (req, 
 
 app.post('/movements', authenticate, validateHasActiveGame, async (req, res) => {
   try {
+    if (!["left", "right", "up", "down"].includes(req.body.direction)) {
+      return res.status(400).send({ message: 'Invalid move direction. Valid values are: "up", "down", "left", "right".' });
+    }
 
+    const result = await Game.move(req.user.gameId, req.user.username, req.body.direction);
+    return res.status(200).send(result);
   } catch (err) {
     console.error('POST /movements\n', err);
     return res.status(500).send({ message: 'Something went wrong' });
@@ -135,3 +140,12 @@ app.get('/leaderboard', authenticate, validateHasActiveGame, async (req, res) =>
     return res.status(500).send({ message: 'Something went wrong' });
   }
 });
+
+app.get('/maps', authenticate, validateHasActiveGame, async (req, res) => {
+  try {
+
+  } catch (err) {
+    console.error('GET /maps\n', err);
+    return res.status(500).send({ message: 'Something went wrong' });
+  }
+})
