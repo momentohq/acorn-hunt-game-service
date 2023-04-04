@@ -69,7 +69,7 @@ const onPointsChanged = async (data) => {
     time: new Date().toISOString()
   };
 
-  await broadcastMessage(details.gameId, message);
+  await broadcastMessage(details.gameId, message, undefined, false);
 };
 
 const onPlayerMoved = async (data) => {
@@ -84,7 +84,7 @@ const onPlayerMoved = async (data) => {
     y: details.y
   };
 
-  await broadcastMessage(details.gameId, message);
+  await broadcastMessage(details.gameId, message, undefined, false);
 };
 
 const broadcastMessage = async (gameId, message, connectionIdToIgnore, saveToChatHistory) => {
