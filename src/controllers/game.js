@@ -71,13 +71,26 @@ const join = async (gameId, username) => {
 
   const messages = await cacheClient.listFetch('chat', gameId);
   const players = await cacheClient.setFetch('player', gameId);
+  const gameTileResponse = await cacheClient.dictionaryFetch('game', `${gameId}-tiles`);
+
+  const gameTiles = [];
+  for (const [key, value] of Object.entries(gameTileResponse.valueRecord())) {
+    const [x, y] = key.split(',');
+    const tile = JSON.parse(value);
+    gameTiles.push({
+      x,
+      y,
+      ...tile
+    });
+  }
 
   const response = {
     name: game.name,
     username: username,
     players: Array.from(players.valueSet()),
-    messages: []
-  }
+    messages: [],
+    tiles: gameTiles
+  };
 
   if (messages instanceof CacheListFetch.Hit) {
     response.messages = messages.valueListString().map(m => JSON.parse(m));
@@ -246,7 +259,7 @@ const move = async (gameId, username, direction) => {
 
   await topicClient.publish('game', 'player-moved', JSON.stringify({ ...playerSpace, x, y, gameId }));
 
-  return { x, y, direction};
+  return { x, y, direction };
 };
 
 export const Game = {
