@@ -80,8 +80,8 @@ const onPlayerMoved = async (data) => {
     username: details.username,
     avatar: details.avatar,
     direction: details.direction,
-    x: details.x,
-    y: details.y
+    x: Number(details.x),
+    y: Number(details.y)
   };
 
   await broadcastMessage(details.gameId, message, undefined, false);

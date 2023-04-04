@@ -45,6 +45,8 @@ const join = async (gameId, username) => {
     }
   }
 
+  x = `${x}`;
+  y = `${y}`;
   const avatar = 'blue-squirrel';
 
   const userTile = {
@@ -78,8 +80,8 @@ const join = async (gameId, username) => {
     const [x, y] = key.split(',');
     const tile = JSON.parse(value);
     gameTiles.push({
-      x,
-      y,
+      x: Number(x),
+      y: Number(y),
       ...tile
     });
   }
