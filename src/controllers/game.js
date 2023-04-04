@@ -119,7 +119,7 @@ const leave = async (gameId, username, userSession) => {
     gameId: gameId,
     message: `${username} left the chat`,
     username: username
-  };  
+  };
 
   const results = await Promise.allSettled([
     await cacheClient.setRemoveElement('player', gameId, username),
@@ -128,12 +128,12 @@ const leave = async (gameId, username, userSession) => {
   ]);
 
   const userLocationResponse = await cacheClient.dictionaryGetFields('user', username, ['x', 'y']);
-  if(userLocationResponse instanceof CacheDictionaryGetFields.Hit){
+  if (userLocationResponse instanceof CacheDictionaryGetFields.Hit) {
     const location = userLocationResponse.valueRecord();
     await Promise.allSettled([
       await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
       await cacheClient.dictionaryRemoveField('game', `${gameId}-tiles`, `${location.x},${location.y}`),
-    ]);    
+    ]);
   }
 
   const failedCalls = results.filter(result => result.status == 'rejected');
@@ -258,6 +258,7 @@ const move = async (gameId, username, direction) => {
   const newSpace = await cacheClient.dictionaryGetField('game', `${gameId}-tiles`, `${x},${y}`);
   if (newSpace instanceof CacheDictionaryGetField.Miss) {
     await Promise.allSettled([
+      await cacheClient.dictionarySetFields('user', username, { x: `${x}`, y: `${y}` }),
       await cacheClient.dictionaryRemoveField('game', `${gameId}-tiles`, `${location.x},${location.y}`),
       await cacheClient.dictionarySetField('game', `${gameId}-tiles`, `${x},${y}`, JSON.stringify(playerSpace))
     ]);

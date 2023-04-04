@@ -8,7 +8,7 @@ const oakCity = {
       y: 4
     },
     {
-      type: 'acorn',
+      type: 'tree',
       x: 5,
       y: 4
     },
