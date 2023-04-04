@@ -193,7 +193,7 @@ const create = async (name, duration, mapId, isRanked) => {
       ...isRanked && { isRanked: `${isRanked}` }
     }, { ttl: CollectionTtl.of(duration) }),
     await cacheClient.setAddElement('game', 'list', JSON.stringify({ id: nameKey, name: name })),
-    await cacheClient.dictionarySetFields('game', `${gameId}-tiles`, blocks)
+    await cacheClient.dictionarySetFields('game', `${nameKey}-tiles`, blocks)
   ]);
 
   return { success: true, id: nameKey };
