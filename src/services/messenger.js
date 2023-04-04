@@ -43,7 +43,7 @@ const onPlayerJoined = async (data) => {
     time: new Date().toISOString()
   };
 
-  await broadcastMessage(details.gameId, message, details.connectionId);
+  await broadcastMessage(details.gameId, message, details.connectionId, true);
 };
 
 const onPlayerLeft = async (data) => {
@@ -56,7 +56,7 @@ const onPlayerLeft = async (data) => {
     time: new Date().toISOString()
   };
 
-  await broadcastMessage(details.gameId, message);
+  await broadcastMessage(details.gameId, message, undefined, true);
 };
 
 const onPointsChanged = async (data) => {
@@ -87,7 +87,7 @@ const onPlayerMoved = async (data) => {
   await broadcastMessage(details.gameId, message);
 };
 
-const broadcastMessage = async (gameId, message, connectionIdToIgnore) => {
+const broadcastMessage = async (gameId, message, connectionIdToIgnore, saveToChatHistory) => {
   const cacheClient = await getCacheClient(['connection']);
   const connectionResponse = await cacheClient.setFetch('connection', gameId);
   if (connectionResponse instanceof CacheSetFetch.Hit) {
@@ -105,7 +105,7 @@ const broadcastMessage = async (gameId, message, connectionIdToIgnore) => {
             connections,
             message,
             gameId,
-            saveToChatHistory: true,
+            saveToChatHistory: saveToChatHistory,
           })
         }
       ]
