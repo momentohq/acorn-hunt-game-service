@@ -260,11 +260,10 @@ const move = async (gameId, username, direction) => {
     await Promise.allSettled([
       await cacheClient.dictionarySetFields('user', username, { x: `${x}`, y: `${y}` }),
       await cacheClient.dictionaryRemoveField('game', `${gameId}-tiles`, `${location.x},${location.y}`),
-      await cacheClient.dictionarySetField('game', `${gameId}-tiles`, `${x},${y}`, JSON.stringify(playerSpace))
+      await cacheClient.dictionarySetField('game', `${gameId}-tiles`, `${x},${y}`, JSON.stringify(playerSpace)),
+      await topicClient.publish('game', 'player-moved', JSON.stringify({ ...playerSpace, x, y, gameId }))
     ]);
-  }
-
-  await topicClient.publish('game', 'player-moved', JSON.stringify({ ...playerSpace, x, y, gameId }));
+  }  
 
   return { x, y, direction };
 };
