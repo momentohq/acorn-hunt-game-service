@@ -1,4 +1,4 @@
-import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch, CacheListFetch, CollectionTtl, CacheDictionaryGetField } from '@gomomento/sdk';
+import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch, CacheListFetch, CollectionTtl, CacheDictionaryGetField, CacheDictionaryGetFields } from '@gomomento/sdk';
 import { getCacheClient, getTopicClient } from '../services/momento.js';
 import UserSession from './user.js';
 import { Maps } from '../services/maps.js';
@@ -119,18 +119,22 @@ const leave = async (gameId, username, userSession) => {
     gameId: gameId,
     message: `${username} left the chat`,
     username: username
-  };
-
-  const userLocationResponse = await cacheClient.dictionaryGetFields('user', username, ['x', 'y']);
-  const location = userLocationResponse.valueRecord();
+  };  
 
   const results = await Promise.allSettled([
     await cacheClient.setRemoveElement('player', gameId, username),
     await cacheClient.setRemoveElement('connection', gameId, userSession.connectionId),
-    await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
-    await cacheClient.dictionaryRemoveField('game', `${gameId}-tiles`, `${location.x},${location.y}`),
     await topicClient.publish('game', 'player-left', JSON.stringify(notification))
   ]);
+
+  const userLocationResponse = await cacheClient.dictionaryGetFields('user', username, ['x', 'y']);
+  if(userLocationResponse instanceof CacheDictionaryGetFields.Hit){
+    const location = userLocationResponse.valueRecord();
+    await Promise.allSettled([
+      await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
+      await cacheClient.dictionaryRemoveField('game', `${gameId}-tiles`, `${location.x},${location.y}`),
+    ]);    
+  }
 
   const failedCalls = results.filter(result => result.status == 'rejected');
   for (const failedCall of failedCalls) {
