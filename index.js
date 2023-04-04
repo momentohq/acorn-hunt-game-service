@@ -51,8 +51,6 @@ app.delete('/super-abilities', authenticate, validateHasActiveGame, async (req, 
 
 app.post('/movements', authenticate, validateHasActiveGame, async (req, res) => {
   try {
-    console.log(req.body);
-    console.log(req.body.direction);
     if (!["left", "right", "up", "down"].includes(req.body.direction)) {
       return res.status(400).send({ message: 'Invalid move direction. Valid values are: "up", "down", "left", "right".' });
     }

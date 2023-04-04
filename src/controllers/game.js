@@ -1,4 +1,4 @@
-import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch, CacheListFetch, CollectionTtl } from '@gomomento/sdk';
+import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch, CacheListFetch, CollectionTtl, CacheDictionaryGetField } from '@gomomento/sdk';
 import { getCacheClient, getTopicClient } from '../services/momento.js';
 import UserSession from './user.js';
 import { Maps } from '../services/maps.js';
