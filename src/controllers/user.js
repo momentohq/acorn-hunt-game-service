@@ -23,7 +23,7 @@ class UserSession {
     }
     else {
       const userSession = sessionResponse.valueRecord();
-      gameId = userSession.gameId;
+      gameId = userSession.currentGameId;
       signInTime = userSession.signInTime;
       connectionId = userSession.wsConnectionId;
     }
