@@ -127,14 +127,19 @@ const leave = async (gameId, username, userSession) => {
     await topicClient.publish('game', 'player-left', JSON.stringify(notification))
   ]);
 
-  const userLocationResponse = await cacheClient.dictionaryGetFields('user', username, ['x', 'y']);
-  if (userLocationResponse instanceof CacheDictionaryGetFields.Hit) {
-    const location = userLocationResponse.valueRecord();
-    await Promise.allSettled([
-      await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
-      await cacheClient.dictionaryRemoveField('game', `${gameId}-tiles`, `${location.x},${location.y}`),
-    ]);
+  const gameTileResponse = await cacheClient.dictionaryFetch('game', `${gameId}-tiles`);
+  const gameTilesToRemove = [];
+  for (const [key, value] of Object.entries(gameTileResponse.valueRecord())) {
+    const tile = JSON.parse(value);
+    if (tile.username == username) {
+      gameTilesToRemove.push(key);
+    }
   }
+
+  await Promise.allSettled([
+    await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
+    await cacheClient.dictionaryRemoveFields('game', `${gameId}-tiles`, gameTilesToRemove)
+  ]);
 
   const failedCalls = results.filter(result => result.status == 'rejected');
   for (const failedCall of failedCalls) {
@@ -263,7 +268,7 @@ const move = async (gameId, username, direction) => {
       await cacheClient.dictionarySetField('game', `${gameId}-tiles`, `${x},${y}`, JSON.stringify(playerSpace)),
       await topicClient.publish('game', 'player-moved', JSON.stringify({ ...playerSpace, x, y, gameId }))
     ]);
-  }  
+  }
 
   return { x, y, direction };
 };
