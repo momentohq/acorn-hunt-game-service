@@ -121,12 +121,6 @@ const leave = async (gameId, username, userSession) => {
     username: username
   };
 
-  const results = await Promise.allSettled([
-    await cacheClient.setRemoveElement('player', gameId, username),
-    await cacheClient.setRemoveElement('connection', gameId, userSession.connectionId),
-    await topicClient.publish('game', 'player-left', JSON.stringify(notification))
-  ]);
-
   const gameTileResponse = await cacheClient.dictionaryFetch('game', `${gameId}-tiles`);
   const gameTilesToRemove = [];
   for (const [key, value] of Object.entries(gameTileResponse.valueRecord())) {
@@ -136,9 +130,12 @@ const leave = async (gameId, username, userSession) => {
     }
   }
 
-  await Promise.allSettled([
+  const results = await Promise.allSettled([
+    await cacheClient.setRemoveElement('player', gameId, username),
+    await cacheClient.setRemoveElement('connection', gameId, userSession.connectionId),
     await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
-    await cacheClient.dictionaryRemoveFields('game', `${gameId}-tiles`, gameTilesToRemove)
+    await cacheClient.dictionaryRemoveFields('game', `${gameId}-tiles`, gameTilesToRemove),
+    await topicClient.publish('game', 'player-left', JSON.stringify(notification))
   ]);
 
   const failedCalls = results.filter(result => result.status == 'rejected');
