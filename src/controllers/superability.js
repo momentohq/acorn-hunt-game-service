@@ -13,12 +13,12 @@ const MAX_SUPER_ABILITIES = 5;
  * @returns {integer} - The new amount of super ability uses
  */
 const increase = async (gameId, username, count) => {
-  const cacheClient = await getCacheClient(['super-abilities', 'leaderboard']);
+  const cacheClient = await getCacheClient(['player', 'leaderboard', 'game']);
 
-  const incrementResponse = await cacheClient.increment('super-abilities', `${gameId}-${username}`, count);
+  const incrementResponse = await cacheClient.increment('player', `${gameId}-${username}-SA`, count);
   let remaining = incrementResponse.value;
   if (incrementResponse.value > MAX_SUPER_ABILITIES) {
-    await cacheClient.set('super-abilities', `${gameId}-${username}`, `${MAX_SUPER_ABILITIES}`);
+    await cacheClient.set('player', `${gameId}-${username}-SA`, `${MAX_SUPER_ABILITIES}`);
     count = count - (incrementResponse.value - MAX_SUPER_ABILITIES);
     remaining = MAX_SUPER_ABILITIES;
   }
@@ -39,9 +39,9 @@ const increase = async (gameId, username, count) => {
  * @returns {{success: boolean, remaining: integer}} - An object indicating if the operation was successful and the number of remaining uses 
  */
 const decrease = async (gameId, username) => {
-  const cacheClient = await getCacheClient(['super-abilities', 'leaderboard']);
+  const cacheClient = await getCacheClient(['player', 'leaderboard', 'game']);
 
-  const decreaseResponse = await cacheClient.increment('super-abilities', `${gameId}-${username}`, -1);
+  const decreaseResponse = await cacheClient.increment('player', `${gameId}-${username}-SA`, -1);
   if (decreaseResponse.value < 0) {
     return { success: false };
   }

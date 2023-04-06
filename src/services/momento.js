@@ -1,5 +1,5 @@
 
-import { CacheClient, TopicClient, EnvMomentoTokenProvider, Configurations, CredentialProvider } from '@gomomento/sdk';
+import { CacheClient, TopicClient, EnvMomentoTokenProvider, Configurations } from '@gomomento/sdk';
 import getSecret from './secrets.js';
 
 let topicClient;
