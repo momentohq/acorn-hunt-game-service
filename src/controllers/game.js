@@ -2,6 +2,7 @@ import { CacheDictionaryFetch, CacheSortedSetGetScore, CacheSetFetch, CacheListF
 import { getCacheClient, getTopicClient } from '../services/momento.js';
 import UserSession from './user.js';
 import { Maps } from '../services/maps.js';
+import { Chat } from '../services/chat.js';
 
 /**
  * Makes the caller a player in the provided game. If the caller is actively part of another game, 
@@ -206,6 +207,7 @@ const create = async (name, duration, mapId, isRanked) => {
 
   const topicClient = await getTopicClient();
   await topicClient.publish('game', 'games-changed', JSON.stringify({ event: 'game-created', id: nameKey }));
+  await Chat.subscribe(nameKey);
 
   return { success: true, id: nameKey };
 };

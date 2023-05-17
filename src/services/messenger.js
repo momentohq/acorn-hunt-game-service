@@ -1,6 +1,6 @@
 import { EventBridgeClient, PutEventsCommand } from '@aws-sdk/client-eventbridge';
 import { CacheSetFetch } from '@gomomento/sdk';
-import { getCacheClient, getTopicClient } from '../services/momento.js';
+import { getCacheClient, getTopicClient } from './momento.js';
 
 const eventBridge = new EventBridgeClient();
 
