@@ -12,7 +12,7 @@ import { Maps } from '../services/maps.js';
  * @returns {{success: boolean, error: string}} - An object indicating if the operation was a success
  */
 const join = async (gameId, username) => {
-  const cacheClient = await getCacheClient(['game', 'player', 'user', 'connection']);
+  const cacheClient = await getCacheClient();
   const topicClient = await getTopicClient();
 
   const gameResponse = await cacheClient.dictionaryFetch('game', gameId);
@@ -108,7 +108,7 @@ const join = async (gameId, username) => {
  * @param { string } username - Username of the player to remove
  */
 const leave = async (gameId, username, userSession) => {
-  const cacheClient = await getCacheClient(['player', 'connection', 'user']);
+  const cacheClient = await getCacheClient();
   const topicClient = await getTopicClient();
 
   if (!userSession) {
@@ -157,7 +157,7 @@ const initializeLeaderboardScore = async (cacheClient, gameId, username) => {
  * @returns array of game objects containing the name and identifier
  */
 const list = async () => {
-  const cacheClient = await getCacheClient(['game']);
+  const cacheClient = await getCacheClient();
 
   let gameList = [];
   const games = await cacheClient.setFetch('game', 'list');
@@ -184,7 +184,7 @@ const create = async (name, duration, mapId, isRanked) => {
     return { success: false, error: 'GameExists' };
   }
 
-  const cacheClient = await getCacheClient(['game']);
+  const cacheClient = await getCacheClient();
   mapId = 'oakCity';
   const map = Maps[mapId];
 
@@ -204,6 +204,9 @@ const create = async (name, duration, mapId, isRanked) => {
     await cacheClient.dictionarySetFields('game', `${nameKey}-tiles`, blocks)
   ]);
 
+  const topicClient = await getTopicClient();
+  await topicClient.publish('game', 'games-changed', JSON.stringify({ event: 'game-created', id: nameKey }));
+
   return { success: true, id: nameKey };
 };
 
@@ -216,7 +219,7 @@ const create = async (name, duration, mapId, isRanked) => {
  * @returns {object} New user coordinates and facing direction
  */
 const move = async (gameId, username, direction) => {
-  const cacheClient = await getCacheClient(['user', 'game']);
+  const cacheClient = await getCacheClient();
   const topicClient = await getTopicClient();
 
   const game = await cacheClient.dictionaryGetField('game', gameId, 'map');

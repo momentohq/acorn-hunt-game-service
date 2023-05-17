@@ -13,7 +13,7 @@ const MAX_SUPER_ABILITIES = 5;
  * @returns {integer} - The new amount of super ability uses
  */
 const increase = async (gameId, username, count) => {
-  const cacheClient = await getCacheClient(['player', 'leaderboard', 'game']);
+  const cacheClient = await getCacheClient();
 
   const incrementResponse = await cacheClient.increment('player', `${gameId}-${username}-SA`, count);
   let remaining = incrementResponse.value;
@@ -39,7 +39,7 @@ const increase = async (gameId, username, count) => {
  * @returns {{success: boolean, remaining: integer}} - An object indicating if the operation was successful and the number of remaining uses 
  */
 const decrease = async (gameId, username) => {
-  const cacheClient = await getCacheClient(['player', 'leaderboard', 'game']);
+  const cacheClient = await getCacheClient();
 
   const decreaseResponse = await cacheClient.increment('player', `${gameId}-${username}-SA`, -1);
   if (decreaseResponse.value < 0) {

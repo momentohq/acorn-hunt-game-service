@@ -11,7 +11,7 @@ class UserSession {
 
   static async load(username) {
     let signInTime, gameId, connectionId;
-    const cacheClient = await getCacheClient(['user']);
+    const cacheClient = await getCacheClient();
     const sessionResponse = await cacheClient.dictionaryGetFields('user', username, ['currentGameId', 'signInTime', 'wsConnectionId']);
     if (sessionResponse instanceof CacheDictionaryGetFields.Miss) {
       const signIn = new Date().toISOString();

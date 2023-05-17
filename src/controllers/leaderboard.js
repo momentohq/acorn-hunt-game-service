@@ -2,7 +2,7 @@ import { CacheSortedSetPutElement, SortedSetOrder, CacheSortedSetFetch } from "@
 import { getCacheClient, getTopicClient } from "../services/momento.js";
 
 const updateScore = async (gameId, username, points) => {
-  const cacheClient = await getCacheClient(['leaderboard']);
+  const cacheClient = await getCacheClient();
   const topicClient = await getTopicClient();
 
   const newScore = await cacheClient.sortedSetIncrementScore('leaderboard', gameId, username, points);
@@ -11,7 +11,7 @@ const updateScore = async (gameId, username, points) => {
 };
 
 const setScore = async (gameId, username, score) => {
-  const cacheClient = await getCacheClient(['leaderboard']);
+  const cacheClient = await getCacheClient();
   const setScoreResponse = await cacheClient.sortedSetPutElement('leaderboard', gameId, username, score);
   if (setScoreResponse instanceof CacheSortedSetPutElement.Error) {
     console.error({
@@ -26,7 +26,7 @@ const setScore = async (gameId, username, score) => {
 
 const fetch = async (gameId, order, top) => {
   const sortOrder = order?.toLowerCase() == 'asc' ? SortedSetOrder.Ascending : SortedSetOrder.Descending;
-  const cacheClient = await getCacheClient(['leaderboard']);
+  const cacheClient = await getCacheClient();
   const leaderboardResponse = await cacheClient.sortedSetFetchByRank('leaderboard', gameId, {
     order: sortOrder,
     ...top && {

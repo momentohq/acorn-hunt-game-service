@@ -4,7 +4,6 @@ import getSecret from './secrets.js';
 
 let topicClient;
 let cacheClient;
-const initializedCaches = [];
 
 /**
  * Gets an initialized Momento Cache Client
@@ -12,7 +11,7 @@ const initializedCaches = [];
  * @param {string[]} caches - array of cache names to initialize
  * @returns @type CacheClient
  */
-export async function getCacheClient(caches) {
+export async function getCacheClient() {
   if (!cacheClient) {
     const authToken = await getSecret('momento');
     process.env.AUTH_TOKEN = authToken;
@@ -24,8 +23,6 @@ export async function getCacheClient(caches) {
       defaultTtlSeconds: Number(process.env.CACHE_TTL)
     });    
   }
-
-  await initializeCaches(caches);
 
   return cacheClient;
 };
@@ -50,14 +47,3 @@ export async function getTopicClient() {
 
   return topicClient;  
 }
-
-const initializeCaches = async (caches) => {
-  const uninitializedCaches = caches.filter(c => !initializedCaches.some(ic => ic == c));
-  if (uninitializedCaches?.length) {
-    const listCachesResponse = await cacheClient.listCaches();
-    const cachesToAdd = uninitializedCaches.filter(c => !listCachesResponse.caches.some(cache => cache.name == c));
-    for (const cacheToAdd of cachesToAdd) {
-      await cacheClient.createCache(cacheToAdd)
-    }
-  }
-};

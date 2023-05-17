@@ -88,7 +88,7 @@ const onPlayerMoved = async (data) => {
 };
 
 const broadcastMessage = async (gameId, message, connectionIdToIgnore, saveToChatHistory) => {
-  const cacheClient = await getCacheClient(['connection']);
+  const cacheClient = await getCacheClient();
   const connectionResponse = await cacheClient.setFetch('connection', gameId);
   if (connectionResponse instanceof CacheSetFetch.Hit) {
     let connections = connectionResponse.valueArray();
