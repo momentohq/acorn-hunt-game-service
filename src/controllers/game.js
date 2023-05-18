@@ -33,8 +33,11 @@ const join = async (gameId, username) => {
   };
 
   const game = gameResponse.valueRecord();
+  let tiles = [];
   const tileResponse = await cacheClient.dictionaryFetch('game', `${gameId}-tiles`);
-  const tiles = Object.keys(tileResponse.valueRecord());
+  if (tileResponse instanceof CacheDictionaryFetch.Hit) {
+    tiles = Object.keys(tileResponse.valueRecord());
+  }
   const map = Maps[game.map];
   let coords, x, y;
   while (!coords) {
