@@ -125,9 +125,9 @@ const leave = async (gameId, username, userSession) => {
     username: username
   };
 
+  const gameTilesToRemove = [];
   const gameTileResponse = await cacheClient.dictionaryFetch('game', `${gameId}-tiles`);
   if (gameTileResponse instanceof CacheDictionaryFetch.Hit) {
-    const gameTilesToRemove = [];
     for (const [key, value] of Object.entries(gameTileResponse.valueRecord())) {
       const tile = JSON.parse(value);
       if (tile.username == username) {
