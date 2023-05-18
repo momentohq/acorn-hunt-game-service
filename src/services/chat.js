@@ -10,7 +10,7 @@ const initialize = async () => {
 
 const subscribe = async (gameId) => {
   await topicClient.subscribe('chat', `${gameId}-chat`, {
-    onItem: async (message) => { await cacheClient.listPushBack('chat', gameId, message); },
+    onItem: async (message) => { await cacheClient.listPushBack('chat', gameId, message.value()); },
     onError: (error) => console.error(error)
   });
   

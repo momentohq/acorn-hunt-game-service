@@ -145,7 +145,7 @@ const leave = async (gameId, username, userSession) => {
     await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
     await cacheClient.dictionaryRemoveFields('game', `${gameId}-tiles`, gameTilesToRemove),
     await topicClient.publish('game', 'player-left', JSON.stringify(notification)),
-    await topicClient.publish('chat', `${gameId}-chat`, JSON.stringify({ type: 'system-message', message: `${username} joined the chat`, time: new Date().toISOString() }))
+    await topicClient.publish('chat', `${gameId}-chat`, JSON.stringify({ type: 'system-message', message: `${username} left the chat`, time: new Date().toISOString() }))
   ]);
 
   const failedCalls = results.filter(result => result.status == 'rejected');
