@@ -64,7 +64,8 @@ const join = async (gameId, username) => {
     await cacheClient.dictionarySetFields('user', username, { x, y, avatar, currentGameId: gameId }),
     await cacheClient.dictionarySetField('game', `${gameId}-tiles`, coords, JSON.stringify(userTile)),
     await topicClient.publish('game', 'player-joined', JSON.stringify(notification)),
-    await topicClient.publish('game', 'player-moved', JSON.stringify({ ...userTile, x, y, gameId }))
+    await topicClient.publish('game', 'player-moved', JSON.stringify({ ...userTile, x, y, gameId })),
+    await topicClient.publish('chat', `${gameId}-chat`, JSON.stringify({ type: 'system-message', message: `${username} joined the chat`, time: new Date().toISOString()}))
   ]);
 
   const failedCalls = results.filter(result => result.status == 'rejected');
@@ -77,14 +78,16 @@ const join = async (gameId, username) => {
   const gameTileResponse = await cacheClient.dictionaryFetch('game', `${gameId}-tiles`);
 
   const gameTiles = [];
-  for (const [key, value] of Object.entries(gameTileResponse.valueRecord())) {
-    const [x, y] = key.split(',');
-    const tile = JSON.parse(value);
-    gameTiles.push({
-      x: Number(x),
-      y: Number(y),
-      ...tile
-    });
+  if (gameTileResponse instanceof CacheDictionaryFetch.Hit) {
+    for (const [key, value] of Object.entries(gameTileResponse.valueRecord())) {
+      const [x, y] = key.split(',');
+      const tile = JSON.parse(value);
+      gameTiles.push({
+        x: Number(x),
+        y: Number(y),
+        ...tile
+      });
+    }
   }
 
   const response = {
@@ -136,7 +139,8 @@ const leave = async (gameId, username, userSession) => {
     await cacheClient.setRemoveElement('connection', gameId, userSession.connectionId),
     await cacheClient.dictionaryRemoveFields('user', username, ['currentGameId', 'x', 'y', 'avatar']),
     await cacheClient.dictionaryRemoveFields('game', `${gameId}-tiles`, gameTilesToRemove),
-    await topicClient.publish('game', 'player-left', JSON.stringify(notification))
+    await topicClient.publish('game', 'player-left', JSON.stringify(notification)),
+    await topicClient.publish('chat', `${gameId}-chat`, JSON.stringify({ type: 'system-message', message: `${username} joined the chat`, time: new Date().toISOString()}))
   ]);
 
   const failedCalls = results.filter(result => result.status == 'rejected');
